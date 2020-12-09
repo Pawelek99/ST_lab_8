@@ -1,89 +1,71 @@
 package com.pointlessapps.st_lab
 
-import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
-import android.widget.Toast
+import android.view.inputmethod.InputMethodManager
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProviders
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.core.view.isVisible
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.HttpURLConnection
+import java.net.URL
 
 class MainActivity : AppCompatActivity() {
 
-    private val wordViewModel: WordViewModel
-        get() = ViewModelProviders.of(this).get(WordViewModel::class.java)
+    companion object {
+        private val BOOK_BASE_URL = "https://www.googleapis.com/books/v1/volumes?"
+        private val QUERY_PARAM = "q"
+        private val MAX_RESULTS = "maxResults"
+        private val PRINT_TYPE = "printType"
+    }
+
+    private val results = mutableListOf<Pair<String, String>>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val viewModel = wordViewModel
+        button.setOnClickListener {
+            (getSystemService(INPUT_METHOD_SERVICE) as? InputMethodManager)?.hideSoftInputFromWindow(
+                window.decorView.rootView.windowToken,
+                InputMethodManager.HIDE_NOT_ALWAYS
+            )
 
-        recyclerview.apply {
-            adapter = WordListAdapter()
-            layoutManager = LinearLayoutManager(applicationContext, RecyclerView.VERTICAL, false)
-
-            ItemTouchHelper(
-                object :
-                    ItemTouchHelper.SimpleCallback(
-                        0,
-                        ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT
-                    ) {
-                    override fun onMove(
-                        recyclerView: RecyclerView,
-                        viewHolder: RecyclerView.ViewHolder,
-                        target: RecyclerView.ViewHolder
-                    ) = false
-
-                    override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                        val word =
-                            (adapter as WordListAdapter).getWordAtPosition(viewHolder.adapterPosition)
-                        Toast.makeText(this@MainActivity, "Deleting $word", Toast.LENGTH_LONG)
-                            .show()
-
-                        wordViewModel.deleteWord(word)
+            loader.isVisible = true
+            GlobalScope.launch(Dispatchers.IO) {
+                (URL(
+                    Uri.parse(BOOK_BASE_URL).buildUpon()
+                        .appendQueryParameter(QUERY_PARAM, editText.text.toString())
+                        .appendQueryParameter(MAX_RESULTS, "10")
+                        .appendQueryParameter(PRINT_TYPE, "books")
+                        .build().toString()
+                ).openConnection() as HttpURLConnection).also {
+                    it.requestMethod = "GET"
+                    it.connect()
+                    BufferedReader(InputStreamReader(it.inputStream)).apply {
+                        val items = JSONObject(readText()).getJSONArray("items")
+                        for (i in 0 until items.length()) {
+                            items.getJSONObject(i).getJSONObject("volumeInfo").also { book ->
+                                try {
+                                    val title = book.getString("title")
+                                    val author = book.getString("authors")
+                                    results.add(title to author)
+                                } catch (e: Exception) {}
+                            }
+                        }
                     }
+                }.disconnect()
+
+                runOnUiThread {
+                    loader.isVisible = false
+                    bookInfo.text = results.joinToString("\n")
                 }
-            ).attachToRecyclerView(this)
+            }
         }
-
-
-        viewModel.getAllWords().observe(this) {
-            (recyclerview.adapter as? WordListAdapter)?.setWords(it)
-        }
-
-        fab.setOnClickListener {
-            startActivityForResult(Intent(this, NewWordActivity::class.java), 1)
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 1 && resultCode == RESULT_OK) {
-            wordViewModel.insert(Word(data?.getStringExtra("reply") ?: ""))
-        } else {
-            Toast.makeText(applicationContext, R.string.empty_not_saved, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.clear_data) {
-            Toast.makeText(this, "Clearing the data...", Toast.LENGTH_SHORT).show()
-
-            wordViewModel.deleteAll()
-            return true
-        }
-
-        return super.onOptionsItemSelected(item)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
     }
 }
