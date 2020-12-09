@@ -10,4 +10,8 @@ class WordViewModel(application: Application) : AndroidViewModel(application) {
     fun getAllWords() = mAllWords
 
     fun insert(word: Word) = repository.insert(word)
+
+    fun deleteAll() = repository.deleteAll()
+
+    fun deleteWord(word: Word) = repository.deleteWord(word)
 }

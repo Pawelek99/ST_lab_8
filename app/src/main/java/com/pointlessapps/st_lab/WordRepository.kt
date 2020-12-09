@@ -16,4 +16,16 @@ class WordRepository(context: Context) {
             wordDao.insert(word)
         }
     }
+
+    fun deleteAll() {
+        GlobalScope.launch(Dispatchers.IO) {
+            wordDao.deleteAll()
+        }
+    }
+
+    fun deleteWord(word: Word) {
+        GlobalScope.launch(Dispatchers.IO) {
+            wordDao.deleteWord(word)
+        }
+    }
 }

@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 
-@Database(entities = [Word::class], version = 1, exportSchema = false)
+@Database(entities = [Word::class], version = 2, exportSchema = false)
 abstract class WordRoomDatabase : RoomDatabase() {
 
     abstract fun wordDao(): WordDao
@@ -25,9 +25,11 @@ abstract class WordRoomDatabase : RoomDatabase() {
             override fun onOpen(db: SupportSQLiteDatabase) {
                 super.onOpen(db)
                 GlobalScope.launch(Dispatchers.IO) {
-                    instance?.wordDao()?.deleteAll()
-                    listOf("dolphin", "crocodile", "cobra").forEach {
-                        instance?.wordDao()?.insert(Word(it))
+                    val wordDao = instance?.wordDao()
+                    if (wordDao?.getAnyWord()?.size ?: 0 == 0) {
+                        listOf("dolphin", "crocodile", "cobra").forEach {
+                            wordDao?.insert(Word(it))
+                        }
                     }
                 }
             }

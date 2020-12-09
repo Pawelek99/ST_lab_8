@@ -10,6 +10,10 @@ class WordListAdapter : RecyclerView.Adapter<WordListAdapter.WordViewHolder>() {
 
     private val mWords = mutableListOf<Word>()
 
+    init {
+        setHasStableIds(true)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): WordViewHolder {
         return WordViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.recyclerview_item, parent, false))
     }
@@ -25,6 +29,10 @@ class WordListAdapter : RecyclerView.Adapter<WordListAdapter.WordViewHolder>() {
     }
 
     override fun getItemCount() = mWords.size
+
+    fun getWordAtPosition(position: Int) = mWords[position]
+
+    override fun getItemId(position: Int) = mWords[position].id.toLong()
 
     class WordViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val wordItemView: TextView = view.findViewById(R.id.textView)
