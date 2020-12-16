@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
   Copyright 2017 Google Inc.
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -10,14 +11,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<resources>
-
-    <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-    </style>
-
-</resources>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:ordering="sequentially">
+    <objectAnimator
+        android:propertyName="rotation"
+        android:duration="500"
+        android:valueFrom="-10"
+        android:valueTo="10"
+        android:repeatCount="infinite"
+        android:repeatMode= "reverse"/>
+</set>
